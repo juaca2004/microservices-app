@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps Portfolio — Arquitectura Multi-región de Microservicios en Azure
+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #181818;
+    --amber: #f59e0b;
+    --amber2: #fbbf24;
+    --amber-dim: rgba(245,158,11,0.12);
+    --amber-dim2: rgba(245,158,11,0.06);
+    --cyan: #22d3ee;
+    --cyan-dim: rgba(34,211,238,0.1);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.1);
+    --red: #f87171;
+    --text: #e5e5e5;
+    --text2: #a3a3a3;
+    --text3: #525252;
+    --border: rgba(255,255,255,0.06);
+    --border2: rgba(255,255,255,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* GRAIN */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 1.2rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--amber);
+    letter-spacing: 0.05em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text2);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--amber); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 8rem 4rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(245,158,11,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,158,11,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%);
+    top: -100px;
+    right: -100px;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    max-width: 900px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--amber);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .hero-label::before {
+    content: '';
+    display: block;
+    width: 2rem;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--amber) 0%, var(--amber2) 50%, #fde68a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-desc {
+    font-size: 1.1rem;
+    color: var(--text2);
+    max-width: 600px;
+    margin-bottom: 3rem;
+    line-height: 1.8;
+  }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 3rem;
+  }
+
+  .pill {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    color: var(--text2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--bg3);
+    transition: all 0.2s;
+  }
+
+  .pill:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: var(--amber-dim2);
+  }
+
+  .pill.amber { border-color: rgba(245,158,11,0.4); color: var(--amber); background: var(--amber-dim2); }
+  .pill.cyan { border-color: rgba(34,211,238,0.3); color: var(--cyan); background: var(--cyan-dim); }
+  .pill.green { border-color: rgba(74,222,128,0.3); color: var(--green); background: var(--green-dim); }
+
+  .hero-btns {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.9rem 2rem;
+    background: var(--amber);
+    color: #0a0a0a;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-block;
+  }
+
+  .btn-primary:hover { background: var(--amber2); transform: translateY(-1px); }
+
+  .btn-secondary {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.9rem 2rem;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-block;
+  }
+
+  .btn-secondary:hover { border-color: var(--amber); color: var(--amber); }
+
+  /* STATS BAR */
+  .stats-bar {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 4rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+
+  .stat {
+    text-align: center;
+    padding: 1rem;
+    border-right: 1px solid var(--border);
+  }
+
+  .stat:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--amber);
+    display: block;
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* SECTIONS */
+  section {
+    padding: 6rem 4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--amber);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 1.5rem;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+  }
+
+  .section-desc {
+    color: var(--text2);
+    max-width: 600px;
+    margin-bottom: 4rem;
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  /* ARCHITECTURE */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .arch-card {
+    background: var(--bg2);
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .arch-card:hover { background: var(--bg3); }
+
+  .arch-card::before {
+    content: attr(data-num);
+    position: absolute;
+    top: 1.5rem;
+    right: 2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--border);
+    line-height: 1;
+    transition: color 0.3s;
+  }
+
+  .arch-card:hover::before { color: var(--amber-dim); }
+
+  .arch-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--amber-dim);
+    border: 1px solid rgba(245,158,11,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .arch-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+  }
+
+  .arch-card p {
+    font-size: 0.9rem;
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 1.2rem;
+  }
+
+  .arch-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    padding: 0.2rem 0.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text3);
+    letter-spacing: 0.05em;
+  }
+
+  /* IMAGE PLACEHOLDER */
+  .img-placeholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: var(--bg3);
+    border: 1px dashed var(--border2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .img-placeholder:hover { border-color: var(--amber); }
+
+  .img-placeholder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--amber-dim2) 0%, transparent 100%);
+  }
+
+  .img-placeholder-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+
+  .img-placeholder input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  .img-placeholder img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* PIPELINE */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 4rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+  }
+
+  .pipe-step {
+    flex: 1;
+    min-width: 160px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-right: none;
+    padding: 1.5rem;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .pipe-step:last-child { border-right: 1px solid var(--border); }
+  .pipe-step:hover { background: var(--bg3); }
+
+  .pipe-step::after {
+    content: '→';
+    position: absolute;
+    right: -0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Space Mono', monospace;
+    color: var(--amber);
+    font-size: 0.9rem;
+    z-index: 1;
+    background: var(--bg2);
+    padding: 0.2rem;
+  }
+
+  .pipe-step:last-child::after { display: none; }
+
+  .pipe-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+  }
+
+  .pipe-step h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .pipe-step p {
+    font-size: 0.78rem;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+
+  /* OBSERVABILITY */
+  .obs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .obs-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .obs-card:hover {
+    border-color: var(--amber);
+    transform: translateY(-2px);
+  }
+
+  .obs-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--amber), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .obs-card:hover::before { opacity: 1; }
+
+  .obs-icon {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .obs-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--amber);
+  }
+
+  .obs-card p {
+    font-size: 0.85rem;
+    color: var(--text2);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .obs-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .obs-item {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .obs-item::before {
+    content: '▸';
+    color: var(--amber);
+    font-size: 0.5rem;
+  }
+
+  /* SECURITY */
+  .sec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .sec-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+
+  .sec-card:hover { border-color: var(--border2); }
+
+  .sec-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--amber);
+    margin-top: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .sec-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .sec-card p {
+    font-size: 0.85rem;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  /* SCREENSHOTS */
+  .screenshots-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .screenshot-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .screenshot-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .screenshot-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text2);
+    letter-spacing: 0.05em;
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-red { background: #f87171; }
+  .dot-yellow { background: #fbbf24; }
+  .dot-green { background: #4ade80; }
+
+  /* TEAM */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .team-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .team-card:hover {
+    border-color: var(--amber);
+    transform: translateY(-2px);
+  }
+
+  .team-avatar {
+    width: 70px;
+    height: 70px;
+    background: var(--amber-dim);
+    border: 1px solid rgba(245,158,11,0.3);
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.2rem;
+    color: var(--amber);
+    font-weight: 700;
+  }
+
+  .team-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .team-role {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+
+  .team-links {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .team-link {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+
+  .team-link:hover { border-color: var(--amber); color: var(--amber); }
+
+  /* FOOTER */
+  footer {
+    padding: 3rem 4rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--amber);
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+  }
+
+  .footer-text {
+    font-size: 0.8rem;
+    color: var(--text3);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-up {
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards;
+  }
+
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+
+  /* TERMINAL BLOCK */
+  .terminal {
+    background: #0d0d0d;
+    border: 1px solid var(--border2);
+    border-radius: 0;
+    padding: 1.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--green);
+    line-height: 1.8;
+    margin-top: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .terminal::before {
+    content: '● ● ●';
+    position: absolute;
+    top: 0.75rem;
+    left: 1rem;
+    color: var(--text3);
+    font-size: 0.5rem;
+    letter-spacing: 0.3em;
+  }
+
+  .terminal-content {
+    margin-top: 1rem;
+  }
+
+  .t-comment { color: var(--text3); }
+  .t-cmd { color: var(--amber); }
+  .t-out { color: var(--text2); }
+  .t-ok { color: var(--green); }
+
+  /* REGION CARDS */
+  .regions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .region-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    position: relative;
+  }
+
+  .region-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    padding: 0.2rem 0.5rem;
+    background: var(--amber-dim);
+    border: 1px solid rgba(245,158,11,0.3);
+    color: var(--amber);
+    letter-spacing: 0.05em;
+  }
+
+  .region-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .region-detail {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+  }
+
+  .region-detail:last-child { border-bottom: none; }
+  .region-key { color: var(--text3); font-family: 'Space Mono', monospace; font-size: 0.7rem; }
+  .region-val { color: var(--text2); font-family: 'Space Mono', monospace; font-size: 0.7rem; }
+
+  @media (max-width: 768px) {
+    nav { padding: 1rem; }
+    .nav-links { display: none; }
+    .hero { padding: 6rem 1.5rem 3rem; }
+    section { padding: 4rem 1.5rem; }
+    .stats-bar { grid-template-columns: 1fr 1fr; padding: 1.5rem; }
+    .arch-grid, .obs-grid, .sec-grid, .screenshots-grid, .team-grid, .regions { grid-template-columns: 1fr; }
+    .pipeline { flex-direction: column; }
+    .pipe-step { border-right: 1px solid var(--border); border-bottom: none; }
+    .pipe-step::after { content: '↓'; right: auto; left: 50%; bottom: -0.85rem; top: auto; transform: translateX(-50%); }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">// DEVOPS_PORTFOLIO</div>
+  <ul class="nav-links">
+    <li><a href="#arquitectura">Arquitectura</a></li>
+    <li><a href="#gitops">GitOps</a></li>
+    <li><a href="#observabilidad">Observabilidad</a></li>
+    <li><a href="#seguridad">Seguridad</a></li>
+    <li><a href="#testing">Testing</a></li>
+    <li><a href="#equipo">Equipo</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-label fade-up">Proyecto de Automatización 2026</div>
+    <h1 class="fade-up delay-1">
+      Arquitectura<br>
+      <span class="gradient-text">Cloud Native</span><br>
+      en Azure
+    </h1>
+    <p class="hero-desc fade-up delay-2">
+      Despliegue de microservicios en Kubernetes multi-región con enfoque GitOps,
+      service mesh, observabilidad completa y automatización total mediante GitHub Actions.
+    </p>
+    <div class="tech-pills fade-up delay-3">
+      <span class="pill amber">Azure AKS</span>
+      <span class="pill amber">Terraform</span>
+      <span class="pill cyan">GitHub Actions</span>
+      <span class="pill cyan">ArgoCD</span>
+      <span class="pill cyan">GitHub Flow</span>
+      <span class="pill">Linkerd</span>
+      <span class="pill">Helm</span>
+      <span class="pill green">Prometheus</span>
+      <span class="pill green">Grafana</span>
+      <span class="pill green">Loki</span>
+      <span class="pill green">Tempo</span>
+      <span class="pill">Key Vault</span>
+      <span class="pill">Fluent Bit</span>
+    </div>
+    <div class="hero-btns fade-up delay-4">
+      <a href="#arquitectura" class="btn-primary">Ver Arquitectura</a>
+      <a href="#equipo" class="btn-secondary">Conocer el Equipo</a>
+      <a href="https://docs.google.com/document/d/1c2mKhoeJ9bS7gCGgzZeMHnnzyy_T1TchnQHuNaU98XI/edit?tab=t.0" target="_blank" class="btn-secondary">📄 Documentación</a>
+      <a href="https://www.canva.com/design/DAHGZiE9EZk/rqUM2tpbN3u4ZwCzYTkjLA/edit" target="_blank" class="btn-secondary">🎨 Presentación</a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat">
+    <span class="stat-num">2</span>
+    <span class="stat-label">Regiones Azure</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">5+</span>
+    <span class="stat-label">Microservicios</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">100%</span>
+    <span class="stat-label">GitOps</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">3</span>
+    <span class="stat-label">Capas Observabilidad</span>
+  </div>
+</div>
+
+<!-- ARQUITECTURA -->
+<section id="arquitectura">
+  <div class="section-label">01 — Infraestructura</div>
+  <h2>Arquitectura <span class="gradient-text">Multi-Región</span></h2>
+  <p class="section-desc">
+    Infraestructura desplegada en dos regiones de Azure con alta disponibilidad gestionada por Traffic Manager.
+    Cada región es completamente independiente con su propio AKS, networking y stack de observabilidad.
+  </p>
+
+  <div class="regions">
+    <div class="region-card">
+      <span class="region-badge">PRIMARY</span>
+      <h3>East US 2</h3>
+      <div class="region-detail">
+        <span class="region-key">cluster</span>
+        <span class="region-val">aks-dev-cluster_r1</span>
+      </div>
+      <div class="region-detail">
+        <span class="region-key">resource_group</span>
+        <span class="region-val">rg-dev-microservices-eastus2</span>
+      </div>
+      <div class="region-detail">
+        <span class="region-key">vnet</span>
+        <span class="region-val">10.0.0.0/16</span>
+      </div>
+      <div class="region-detail">
+        <span class="region-key">service_cidr</span>
+        <span class="region-val">10.100.0.0/16</span>
+      </div>
+    </div>
+    <div class="region-card">
+      <span class="region-badge">SECONDARY</span>
+      <h3>West US 3</h3>
+      <div class="region-detail">
+        <span class="region-key">cluster</span>
+        <span class="region-val">aks-dev-cluster_r2</span>
+      </div>
+      <div class="region-detail">
+        <span class="region-key">resource_group</span>
+        <span class="region-val">rg-dev-microservices-westus3</span>
+      </div>
+      <div class="region-detail">
+        <span class="region-key">vnet</span>
+        <span class="region-val">10.1.0.0/16</span>
+      </div>
+      <div class="region-detail">
+        <span class="region-key">service_cidr</span>
+        <span class="region-val">10.200.0.0/16</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-grid">
+    <div class="arch-card" data-num="01">
+      <div class="arch-icon">☁️</div>
+      <h3>Infraestructura como Código</h3>
+      <p>Toda la infraestructura definida en Terraform con módulos reutilizables para VNets, AKS, Key Vaults y Traffic Manager.</p>
+      <div class="arch-tags">
+        <span class="tag">Terraform</span>
+        <span class="tag">Azure AKS</span>
+        <span class="tag">Key Vault</span>
+        <span class="tag">Traffic Manager</span>
+      </div>
+      <div class="img-placeholder" >
+        <div class="img-placeholder-icon">
+          <img src="BaseDiagram.png" alt="Infraestructura">
+        </div>
+      </div>
+    </div>
+    <div class="arch-card" data-num="02">
+      <div class="arch-icon">⚙️</div>
+      <h3>Kubernetes con Nginx Gateway</h3>
+      <p>Nginx Gateway Fabric como ingress controller con Gateway API v2. Namespaces separados por componente con RBAC granular.</p>
+      <div class="arch-tags">
+        <span class="tag">Nginx Gateway</span>
+        <span class="tag">Gateway API v2</span>
+        <span class="tag">Namespaces</span>
+        <span class="tag">RBAC</span>
+      </div>
+      <div class="img-placeholder">
+        <div class="img-placeholder-icon">
+          <img src="testing.png" alt="Arquitectura Kubernetes">
+        </div>
+      </div>
+    </div>
+    <div class="arch-card" data-num="03">
+      <div class="arch-icon">🔗</div>
+      <h3>Service Mesh con Linkerd</h3>
+      <p>Linkerd como service mesh para mTLS automático entre microservicios, observabilidad de tráfico y trazabilidad distribuida hacia Tempo.</p>
+      <div class="arch-tags">
+        <span class="tag">Linkerd</span>
+        <span class="tag">mTLS</span>
+        <span class="tag">OpenTelemetry</span>
+        <span class="tag">Tracing</span>
+      </div>
+      <div class="img-placeholder" onclick="this.querySelector('input').click()">
+        <div class="img-placeholder-icon">
+          <img src="linkerd.png" alt="Arquitectura Linkerd">
+        </div>
+  
+      </div>
+    </div>
+    <div class="arch-card" data-num="04">
+      <div class="arch-icon">🔐</div>
+      <h3>Gestión de Secretos</h3>
+      <p>Secretos migrados de GitHub Actions a Azure Key Vault. El pipeline crea y recupera los secretos dinámicamente sin exponerlos en los logs.</p>
+      <div class="arch-tags">
+        <span class="tag">Key Vault</span>
+        <span class="tag">Service Principal</span>
+        <span class="tag">RBAC</span>
+        <span class="tag">add-mask</span>
+      </div>
+      <div class="img-placeholder">
+        <div class="img-placeholder-icon">
+          <img src="key-vault.png" alt="azure key vault">
+        </div>
+      
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GITOPS -->
+<section id="gitops">
+  <div class="section-label">02 — CI/CD</div>
+  <h2>Flujo <span class="gradient-text">GitOps</span></h2>
+  <p class="section-desc">
+    Pipeline automatizado con GitHub Actions para el despliegue de infraestructura y aplicaciones.
+    ArgoCD mantiene el estado del cluster sincronizado con el repositorio Git en todo momento.
+    El equipo adoptó <strong style="color: var(--amber);">GitHub Flow</strong> como estrategia de ramificación: cada funcionalidad se desarrolla en una rama corta, se revisa mediante Pull Request y se fusiona directamente a <code style="color: var(--cyan); font-family: 'Space Mono', monospace; font-size: 0.85em;">main</code>, disparando el pipeline de despliegue automáticamente.
+  </p>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-num">STEP 01</div>
+      <h4>Push a Rama</h4>
+      <p>Developer hace push y dispara el workflow de GitHub Actions</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">STEP 02</div>
+      <h4>Azure Login</h4>
+      <p>Autenticación con Service Principal e inyección de secretos desde Key Vault</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">STEP 03</div>
+      <h4>Infra Deploy</h4>
+      <p>Linkerd, Nginx, cert-manager, monitoring stack via Helm</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">STEP 04</div>
+      <h4>ArgoCD Sync</h4>
+      <p>ArgoCD detecta cambios y sincroniza los microservicios automáticamente</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">STEP 05</div>
+      <h4>Multi-Región</h4>
+      <p>Matrix strategy ejecuta el deploy en parallel en eastus2 y westus3</p>
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-content">
+      <div class="t-comment"># GitHub Actions — helm-deploy.yml</div>
+      <div>&nbsp;</div>
+      <div><span class="t-cmd">strategy:</span></div>
+      <div>&nbsp;&nbsp;<span class="t-cmd">matrix:</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-cmd">region:</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-out">- name: eastus2 | aks_cluster: aks-dev-cluster_r1</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-out">- name: westus3 | aks_cluster: aks-dev-cluster_r2</span></div>
+      <div>&nbsp;</div>
+      <div><span class="t-ok">✓ Checkout helm repo</span></div>
+      <div><span class="t-ok">✓ Azure login (Key Vault secrets)</span></div>
+      <div><span class="t-ok">✓ Install Linkerd + tracing</span></div>
+      <div><span class="t-ok">✓ Deploy monitoring stack</span></div>
+      <div><span class="t-ok">✓ Deploy microservices via ArgoCD</span></div>
+    </div>
+  </div>
+
+  <div class="screenshots-grid" style="margin-top: 3rem;">
+    <div class="screenshot-item">
+      <div class="screenshot-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="screenshot-title">GitHub Actions — Pipeline</span>
+      </div>
+      <div class="img-placeholder" style="border: none; aspect-ratio: 16/9;">
+        <div class="img-placeholder-icon">
+          <img src="pipeline.png" alt="GitHub Actions Pipeline">
+        </div>
+
+      </div>
+    </div>
+    <div class="screenshot-item">
+      <div class="screenshot-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="screenshot-title">ArgoCD — App of Apps</span>
+      </div>
+      <div class="img-placeholder" style="border: none; aspect-ratio: 16/9;" >
+        <div class="img-placeholder-icon">
+          <img src="argo.png" alt="ArgoCD App of Apps">
+        </div>
+  
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OBSERVABILIDAD -->
+<section id="observabilidad">
+  <div class="section-label">03 — Observabilidad</div>
+  <h2>Stack de <span class="gradient-text">Observabilidad</span></h2>
+  <p class="section-desc">
+    Stack completo de observabilidad desplegado en cada región: métricas con Prometheus,
+    logs con Fluent Bit + Loki, todo visualizado en Grafana.
+  </p>
+
+  <div class="obs-grid">
+    <div class="obs-card">
+      <div class="obs-icon">📊</div>
+      <h3>Métricas</h3>
+      <p>Prometheus con alertas configuradas para CrashLoop, alta latencia, uso de CPU/memoria y errores 5xx.</p>
+      <div class="obs-stack">
+        <span class="obs-item">Prometheus + Alertmanager</span>
+        <span class="obs-item">Node Exporter + kube-state-metrics</span>
+        <span class="obs-item">Alertas vía Gmail SMTP</span>
+        <span class="obs-item">Dashboards en Grafana</span>
+      </div>
+    </div>
+    <div class="obs-card">
+      <div class="obs-icon">📋</div>
+      <h3>Logs</h3>
+      <p>Fluent Bit como DaemonSet recolecta logs de todos los contenedores y los envía a Loki para su indexación.</p>
+      <div class="obs-stack">
+        <span class="obs-item">Fluent Bit DaemonSet</span>
+        <span class="obs-item">Parser CRI + Kubernetes filter</span>
+        <span class="obs-item">Loki SingleBinary</span>
+        <span class="obs-item">Filtrado por namespace en Grafana</span>
+      </div>
+    </div>
+    <div class="obs-card">
+      <div class="obs-icon">🔍</div>
+      <h3>Trazas</h3>
+      <p>Linkerd genera trazas de todo el tráfico entre microservicios y las envía vía OpenTelemetry Collector a Tempo.</p>
+      <div class="obs-stack">
+        <span class="obs-item">Linkerd proxy tracing</span>
+        <span class="obs-item">OpenTelemetry Collector</span>
+        <span class="obs-item">TraceQL en Grafana</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="screenshots-grid">
+    <div class="screenshot-item">
+      <div class="screenshot-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="screenshot-title">Grafana — Platform Overview Dashboard</span>
+      </div>
+      <div class="img-placeholder" style="border: none; aspect-ratio: 16/9;">
+        <div class="img-placeholder-icon">
+          <img src="dashboard.png" alt="Grafana Dashboard">
+        </div>
+      </div>
+    </div>
+    <div class="screenshot-item">
+      <div class="screenshot-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="screenshot-title">Grafana — Logs por Namespace</span>
+      </div>
+      <div class="img-placeholder" style="border: none; aspect-ratio: 16/9;">
+        <div class="img-placeholder-icon">
+          <img src="logs.png" alt="Grafana Logs">
+        </div>
+      </div>
+    </div>
+    <div class="screenshot-item">
+      <div class="screenshot-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="screenshot-title">Linkerd Viz — Service Mesh</span>
+      </div>
+      <div class="img-placeholder" style="border: none; aspect-ratio: 16/9;" >
+        <div class="img-placeholder-icon">
+          <img src="linkerd-viz.png" alt="Linkerd Viz">
+        </div>
+
+      </div>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- SEGURIDAD -->
+<section id="seguridad">
+  <div class="section-label">04 — Seguridad</div>
+  <h2>Capas de <span class="gradient-text">Seguridad</span></h2>
+  <p class="section-desc">
+    Seguridad implementada en múltiples capas: desde la gestión de identidades y secretos
+    hasta el cifrado de tráfico entre microservicios.
+  </p>
+
+  <div class="sec-grid">
+    <div class="sec-card">
+      <div class="sec-dot"></div>
+      <div>
+        <h3>mTLS Automático</h3>
+        <p>Linkerd cifra automáticamente todo el tráfico entre microservicios con mTLS sin modificar el código de las aplicaciones.</p>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-dot"></div>
+      <div>
+        <h3>Azure Key Vault</h3>
+        <p>Secretos almacenados en Key Vault por región. El pipeline los crea y recupera dinámicamente enmascarando los valores en los logs.</p>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-dot"></div>
+      <div>
+        <h3>OAuth2 Proxy</h3>
+        <p>Acceso al dashboard de Linkerd protegido con OAuth2 Proxy integrado con Azure AD para autenticación centralizada.</p>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-dot"></div>
+      <div>
+        <h3>Cert-Manager + GoDaddy</h3>
+        <p>Certificados TLS automáticos con cert-manager y webhook de GoDaddy para validación DNS, renovación automática sin downtime.</p>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-dot"></div>
+      <div>
+        <h3>Service Principal con RBAC</h3>
+        <p>Dos Service Principals separados: uno para infraestructura (Terraform) y otro para el despliegue de aplicaciones, con permisos mínimos.</p>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-dot"></div>
+      <div>
+        <h3>Linkerd Policy Auth</h3>
+        <p>Políticas de autorización de Linkerd para controlar qué servicios pueden comunicarse entre sí dentro del mesh.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTING -->
+<section id="testing">
+  <div class="section-label">05 — Calidad &amp; Resiliencia</div>
+  <h2>Pruebas de <span class="gradient-text">Testing</span></h2>
+  <p class="section-desc">
+    Validamos el rendimiento y la resiliencia de la plataforma mediante pruebas de carga con Locust
+    e ingeniería del caos con Chaos Mesh y Litmus, garantizando que el sistema aguanta condiciones extremas.
+  </p>
+
+  <div class="arch-grid" style="margin-bottom: 3rem;">
+    <!-- LOCUST -->
+    <div class="arch-card" data-num="01">
+      <div class="arch-icon">⚡</div>
+      <h3>Pruebas de Carga — Locust</h3>
+      <p>Se ejecutaron dos escenarios de prueba sobre los microservicios expuestos para medir el comportamiento bajo carga sostenida y ante picos repentinos de tráfico.</p>
+      <div class="arch-tags" style="margin-bottom: 1rem;">
+        <span class="tag">Locust</span>
+        <span class="tag">Python</span>
+        <span class="tag">HTTP</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+        <div style="background: var(--bg); border: 1px solid var(--border2); padding: 1rem;">
+          <div style="font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--amber); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.4rem;">🔁 Prueba 1 — Carga Sostenida</div>
+          <p style="font-size: 0.85rem; color: var(--text2); margin: 0;">Simulación de usuarios concurrentes incrementales para medir throughput, latencia promedio y tasa de errores bajo condiciones normales de operación.</p>
+        </div>
+        <div style="background: var(--bg); border: 1px solid var(--border2); padding: 1rem;">
+          <div style="font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--red); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.4rem;">⚡ Prueba 2 — Spike</div>
+          <p style="font-size: 0.85rem; color: var(--text2); margin: 0;">Incremento abrupto de tráfico para evaluar la capacidad del sistema de escalar rápidamente y recuperarse sin degradación del servicio.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAOS -->
+    <div class="arch-card" data-num="02">
+      <div class="arch-icon">🔥</div>
+      <h3>Chaos Engineering — Litmus</h3>
+      <p>Se aplicó ingeniería del caos con <strong style="color: var(--amber);">Litmus</strong> sobre el clúster AKS para validar la tolerancia a fallos, la recuperación automática y la resiliencia del service mesh.</p>
+      <div class="arch-tags" style="margin-bottom: 1rem;">
+        <span class="tag">Chaos Mesh</span>
+        <span class="tag">Litmus</span>
+        <span class="tag">AKS</span>
+        <span class="tag">Resiliencia</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
+        <div class="region-detail"><span class="region-key">Pod Kill</span><span class="region-val" style="color: var(--green);">✓ Auto-recuperación</span></div>
+        <div class="region-detail"><span class="region-key">Network Latency</span><span class="region-val" style="color: var(--green);">✓ mTLS estable</span></div>
+        <div class="region-detail"><span class="region-key">CPU Stress</span><span class="region-val" style="color: var(--green);">✓ HPA activado</span></div>
+        <div class="region-detail"><span class="region-key">Node Drain</span><span class="region-val" style="color: var(--green);">✓ Rescheduling OK</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Locust screenshot -->
+  <div class="screenshots-grid">
+    <div class="screenshot-item">
+      <div class="screenshot-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="screenshot-title">Locust — Resultados de Prueba de Carga</span>
+      </div>
+      <div class="img-placeholder" style="border: none; aspect-ratio: 16/9;">
+        <div class="img-placeholder-icon">
+          <img src="locust.png" alt="Resultados Locust">
+        </div>
+      </div>
+    </div>
+    <div class="screenshot-item">
+      <div class="screenshot-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="screenshot-title">Litmus — Chaos Experiments Dashboard</span>
+      </div>
+      <div class="img-placeholder" style="border: none; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center;">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔥</div>
+          <div style="font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text3);">LITMUS CHAOS</div>
+          <div style="font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--green); margin-top: 0.3rem;">All experiments passed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EQUIPO -->
+<section id="equipo">
+  <div class="section-label">06 — Organización: MonsterOps</div>
+  <h2><span class="gradient-text">MonsterOps</span></h2>
+  <p class="section-desc">
+    Desarrollado como proyecto de la asignatura de Automatización 2026-1.
+  </p>
+
+  <div class="team-grid">
+    <div class="team-card">
+      <div class="team-avatar">M1</div>
+      <div class="team-name">Andres Mauricio Mesa</div>
+      <div class="team-role">DevOps Engineer</div>
+      <div class="team-links">
+        <a href="#" class="team-link">GitHub</a>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">M2</div>
+      <div class="team-name">Juan Manuel Velosa</div>
+      <div class="team-role">DevOps Engineer</div>
+      <div class="team-links">
+        <a href="#" class="team-link">GitHub</a>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">M3</div>
+      <div class="team-name">Juan Jose De La Pava</div>
+      <div class="team-role">DevOps Engineer</div>
+      <div class="team-links">
+        <a href="#" class="team-link">GitHub</a>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">M4</div>
+      <div class="team-name">Juan Jose Barrera</div>
+      <div class="team-role">DevOps Engineer</div>
+      <div class="team-links">
+        <a href="#" class="team-link">GitHub</a>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">M5</div>
+      <div class="team-name">Andres Bueno Cardona</div>
+      <div class="team-role">DevOps Engineer</div>
+      <div class="team-links">
+        <a href="#" class="team-link">GitHub</a>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">M6</div>
+      <div class="team-name">Lina Maria Andrade</div>
+      <div class="team-role">Scrum Master</div>
+      <div class="team-links">
+        <a href="#" class="team-link">GitHub</a>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">M6</div>
+      <div class="team-name">Santiago Hernandez Saavedra</div>
+      <div class="team-role">Product Owner</div>
+      <div class="team-links">
+        <a href="#" class="team-link">GitHub</a>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 3rem; text-align: center; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+    <a href="https://github.com/Automatizacion-2026-1" class="btn-primary">Ver Repositorio en GitHub</a>
+    <a href="https://docs.google.com/document/d/1c2mKhoeJ9bS7gCGgzZeMHnnzyy_T1TchnQHuNaU98XI/edit?tab=t.0" target="_blank" class="btn-secondary">📄 Documentación del Proyecto</a>
+    <a href="https://www.canva.com/design/DAHGZiE9EZk/rqUM2tpbN3u4ZwCzYTkjLA/edit" target="_blank" class="btn-secondary">🎨 Ver Presentación</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">// AUTOMATIZACION_2026</div>
+  <p class="footer-text">Arquitectura Cloud Native en Azure — AKS · Terraform · GitOps · Observabilidad</p>
+</footer>
+
+<script>
+function loadImg(input) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  const placeholder = input.closest('.img-placeholder');
+  reader.onload = e => {
+    let img = placeholder.querySelector('img');
+    if (!img) {
+      img = document.createElement('img');
+      placeholder.appendChild(img);
+    }
+    img.src = e.target.result;
+    placeholder.querySelector('.img-placeholder-icon').style.display = 'none';
+    placeholder.querySelector('.img-placeholder-label').style.display = 'none';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.arch-card, .obs-card, .sec-card, .team-card, .pipe-step, .region-card').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(15px)';
+  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
